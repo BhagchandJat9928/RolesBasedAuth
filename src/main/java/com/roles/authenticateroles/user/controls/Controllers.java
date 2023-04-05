@@ -30,6 +30,11 @@ public class Controllers {
 	public String login(Model model) {
 		return "login";
 	}
+
+	@GetMapping(value="/user/map")
+	public String azureMap(Model model) {
+		return "azuremaps";
+	}
 	
 	
 	
