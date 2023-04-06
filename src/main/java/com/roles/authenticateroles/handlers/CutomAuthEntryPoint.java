@@ -25,8 +25,11 @@ public class CutomAuthEntryPoint implements AuthenticationEntryPoint {
 	    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 	    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
 
-	  response.sendError(401,authException.getMessage());
+	 // response.sendError(401,authException.getMessage());
+	  response.sendRedirect("/login");
 	  }
+
+
 
 	}
 

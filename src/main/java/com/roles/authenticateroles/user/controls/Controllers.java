@@ -31,6 +31,13 @@ public class Controllers {
 		return "login";
 	}
 
+	
+
+	@GetMapping(value="/profile")
+	public String profile(Model model) {
+		return "profile";
+	}
+
 	@GetMapping(value="/")
 	public String homepage(Model model) {
 		return "index";
@@ -53,20 +60,21 @@ public class Controllers {
 	}
 	
 	@PostMapping(value="/signup",consumes="application/x-www-form-urlencoded")
-	public ModelAndView signup( User user,ModelAndView model) {
-		System.out.println(user.getUsername());
+	public ModelAndView register( User user,ModelAndView model) {
+
 		Optional<User> us=repository.findByUsername(user.getUsername());
 		
 		if(us.isEmpty()) {
 			 BCryptPasswordEncoder encoder=new BCryptPasswordEncoder();
 			user.setPassword(encoder.encode(user.getPassword()));
+			user.setRoles("USER");
 			repository.save(user);
 			model.addObject("success", "Successfully Created");
 			model.setStatus(HttpStatus.OK);
 			model.setViewName("login");
 			
 		}else {
-			System.out.println(us);
+			
 			model.addObject("error", "User Already Exist");
 			model.setStatus(HttpStatus.ALREADY_REPORTED);
 			model.setViewName("signup");

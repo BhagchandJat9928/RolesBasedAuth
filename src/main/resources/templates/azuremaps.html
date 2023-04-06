@@ -2,7 +2,7 @@
 <html lang="en">
 
 <head>
-    <title>Interactive Search Quickstart - Azure Maps Web SDK Samples</title>
+    <title>Azure Map</title>
 
     <meta charset="utf-8" />
 	<link rel="shortcut icon" href="/favicon.ico"/>
@@ -31,6 +31,7 @@
 
         function GetMap() {
             //Initialize a map instance.
+           
             map = new atlas.Map('myMap', {
                 center: [-118.270293, 34.039737],
                 zoom: 14,
@@ -54,27 +55,87 @@
                 }
             });
 
-            //Store a reference to the Search Info Panel.
-            resultsPanel = document.getElementById("results-panel");
 
-            //Add key up event to the search box. 
-            searchInput = document.getElementById("search-input");
-            searchInput.addEventListener("keyup", searchInputKeyup);
+              //Store a reference to the Search Info Panel.
+              resultsPanel = document.getElementById("results-panel");
 
-            //Create a popup which we can reuse for each result.
-            popup = new atlas.Popup();
+//Add key up event to the search box. 
+searchInput = document.getElementById("search-input");
+searchInput.addEventListener("keyup", searchInputKeyup);
+
+//Create a popup which we can reuse for each result.
+popup = new atlas.Popup();
+
 
             //Wait until the map resources are ready.
-            map.events.add('ready', function () {
+map.events.add('ready', function() {
 
-                //Add the zoom control to the map.
-                map.controls.add(new atlas.control.ZoomControl(), {
-                    position: 'top-right'
-                });
+//Create a data source and add it to the map.
+datasource = new atlas.source.DataSource();
+map.sources.add(datasource);
 
-                //Create a data source and add it to the map.
-                datasource = new atlas.source.DataSource();
-                map.sources.add(datasource);
+//Construct a zoom control and add it to the map.
+map.controls.add(new atlas.control.ZoomControl(), {
+    position: 'top-right'
+});
+
+//Construct a pitch control and add it to the map.
+map.controls.add(new atlas.control.PitchControl(), {
+    position: 'bottom-right'
+});
+
+//Construct a compass control and add it to the map.
+map.controls.add(new atlas.control.CompassControl(), {
+    position: 'bottom-left'
+});
+//Add a layer for rendering the route lines and have it render under the map labels.
+map.layers.add(new atlas.layer.LineLayer(datasource, null, {
+    strokeColor: '#2272B9',
+    strokeWidth: 5,
+    lineJoin: 'round',
+    lineCap: 'round'
+}), 'labels');
+
+//Add a layer for rendering point data.
+map.layers.add(new atlas.layer.SymbolLayer(datasource, null, {
+    iconOptions: {
+        image: ['get', 'icon'],
+        allowOverlap: true
+   },
+    textOptions: {
+        textField: ['get', 'title'],
+        offset: [0, 1.2]
+    },
+    filter: ['any', ['==', ['geometry-type'], 'Point'], ['==', ['geometry-type'], 'MultiPoint']] //Only render Point or MultiPoints in this layer.
+}));
+
+
+        //Create the GeoJSON objects which represent the start and end points of the route.
+        var startPoint = new atlas.data.Feature(new atlas.data.Point([75.8287,26.85731]), {
+    title: "Redmond",
+    icon: "pin-round-blue"
+});
+
+var endPoint = new atlas.data.Feature(new atlas.data.Point([75.86465,26.8211]), {
+    title: "Seattle",
+    icon: "pin-red"
+});
+console.log(startPoint, endPoint);
+//Add the data to the data source.
+datasource.add([startPoint, endPoint]);
+
+map.setCamera({
+    bounds: atlas.data.BoundingBox.fromData([startPoint, endPoint]),
+    padding: 80
+});
+
+//Use MapControlCredential to share authentication between a map control and the service module.
+var pipeline = atlas.service.MapsURL.newPipeline(new atlas.service.MapControlCredential(map));
+
+//Construct the RouteURL object
+var routeURL = new atlas.service.RouteURL(pipeline);
+
+
 
                 //Add a layer for rendering the results.
                 var searchLayer = new atlas.layer.SymbolLayer(datasource, null, {
@@ -86,6 +147,17 @@
                 });
                 map.layers.add(searchLayer);
 
+
+                //Start and end point input to the routeURL
+
+var coordin=[startPoint.geometry,endPoint.geometry];
+//Make a search route request
+routeURL.calculateRouteDirections(atlas.service.Aborter.timeout(10000), coordin).then((directions) => {
+    //Get data features from response
+    var data = directions.geojson.getFeatures();
+    datasource.add(data);
+});
+
                 //Add a click event to the search layer and show a popup when a result is clicked.
                 map.events.add("click", searchLayer, function (e) {
                     //Make sure the event occurred on a shape feature.
@@ -93,6 +165,11 @@
                         showPopup(e.shapes[0]);
                     }
                 });
+
+                
+
+
+//end ready state
             });
         }
         function searchInputKeyup(e) {
@@ -135,6 +212,7 @@
 
                 //Extract GeoJSON feature collection from the response and add it to the datasource
                 var data = results.geojson.getFeatures();
+                
                 datasource.add(data);
 
                 if (centerMapOnResults) {
@@ -142,11 +220,11 @@
                         bounds: data.bbox
                     });
                 }
-                console.log(data);
+                console.log("data "+data);
                 //Create the HTML for the results list.
                 var html = [];
-                for (var i = 0; i < data.features.length; i++) {
-                    var r = data.features[i];
+                for (const element of data.features) {
+                    var r = element;
                     html.push('<li onclick="itemClicked(\'', r.id, '\')" onmouseover="itemHovered(\'', r.id, '\')">')
                     html.push('<div class="title">');
                     if (r.properties.poi && r.properties.poi.name) {
@@ -172,11 +250,14 @@
         function itemHovered(id) {
             //Show a popup when hovering an item in the result list.
             var shape = datasource.getShapeById(id);
+            console.log("itemHovered")
             showPopup(shape);
         }
         function itemClicked(id) {
             //Center the map over the clicked item from the result list.
             var shape = datasource.getShapeById(id);
+            console.log("location"+shape.getCoordinates());
+
             map.setCamera({
                 center: shape.getCoordinates(),
                 zoom: 17
@@ -212,7 +293,11 @@
                 content: html.join('')
             });
             popup.open(map);
+
+            
         }
+
+
     </script>
     <style>
         html,
@@ -222,7 +307,7 @@
             padding: 0;
             margin: 0;
             overflow:hidden;
-            font-family: segoeui;
+            
         }
         #myMap {
             position: relative;
@@ -296,7 +381,7 @@
                     cursor: pointer;
                 }
                 #results-panel > li > .title {
-                    font-family: segoeui-b;
+                   
                     line-height: 14pt;
                     width: 100%;
                     white-space: nowrap;
@@ -327,7 +412,7 @@
             overflow: hidden;
             border-top-left-radius: 4px;
             border-top-right-radius: 4px;
-            font-family: segoeui-b;
+           
         }
         .poi-content-box {
             width: calc(100% - 16px);
