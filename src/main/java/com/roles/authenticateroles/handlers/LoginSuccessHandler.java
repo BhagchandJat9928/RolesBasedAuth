@@ -65,10 +65,9 @@ public class LoginSuccessHandler  implements AuthenticationSuccessHandler{
 					 redirectStrategy.sendRedirect(request, response, targetUrl);
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			} catch (ServletException e) {
-				// TODO Auto-generated catch block
+				
 				e.printStackTrace();
 			}
 

@@ -1,6 +1,5 @@
 package com.roles.authenticateroles.user.controls;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;

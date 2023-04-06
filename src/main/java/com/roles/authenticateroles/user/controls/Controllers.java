@@ -31,6 +31,10 @@ public class Controllers {
 		return "login";
 	}
 
+	@GetMapping(value="/")
+	public String homepage(Model model) {
+		return "index";
+	}
 	@GetMapping(value="/user/map")
 	public String azureMap(Model model) {
 		return "azuremaps";

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" type="text/css" href="/webjars/bootstrap/css/bootstrap.min.css">
+</head>
+
+<body>
+    <div  class="container text-center w-25">
+        <div>
+            <h1 style="color: blue;">WELCOME</h1><br>
+        </div>
+        <div >
+            
+            <h3 class="btn-lg btn-block"  style=" width: 100%; background-color: hsl(110, 88%, 49%) ;  " ><a th:href="@{/signup}" style="color: white;">SIGN UP</a></h3>
+            <h3 class="btn-lg btn-block " style="background-color: rgb(241, 65, 11); width: 100%; "><a th:href="@{/login}" style="color: white;">LOGIN</a></h3>
+        
+            
+        </div>
+    </div>
+</body>
+
+</html>
