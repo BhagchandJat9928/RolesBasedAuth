@@ -5,6 +5,8 @@ import java.io.Serializable;
 import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import com.roles.authenticateroles.cart.Cart;
+
 
 @Document(collection="user")
 public class User implements Serializable{
@@ -12,12 +14,15 @@ public class User implements Serializable{
 	private static final long serialVersionUID = -3350141168364333472L;
 
 	@Indexed(unique=true)
-	String username;
+	private String username;
 	
-	String password;
+	private String password;
 	
-	String roles;
-	String refreshToken;
+	private String roles;
+	private String refreshToken;
+	
+	
+	private Cart cart;
 	
 	
 	
@@ -55,11 +60,22 @@ public class User implements Serializable{
 	public void setRefreshToken(String refreshToken) {
 		this.refreshToken = refreshToken;
 	}
+	
+	
+	public Cart getCart() {
+		return cart;
+	}
+	public void setCart(Cart cart) {
+		this.cart = cart;
+	}
+	
 	@Override
 	public String toString() {
 		return "User [username=" + username + ", password=" + password + ", roles=" + roles + ", refreshToken="
-				+ refreshToken + "]";
+				+ refreshToken + ", cart=" + cart + "]";
 	}
+	
+	
 	
 	
 

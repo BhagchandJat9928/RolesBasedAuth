@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ 
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+
+<title>Product Page</title>
+</head>
+<body>
+<div class="text-center">
+<h1>Product</h1>
+</div >
+<br>
+<h1 class="alert alert-success-dialogue close"><span th:text="${addToCart}"></span></h1>
+	 <th:block class="text-center pd-50" th:if="${products == null }">
+         <h2>No Product found</h2>
+         
+      </th:block>
+      
+      <th:block th:if="${products!=null}" class="text-justify">
+      <div class="row">
+  <div class="col-md-4 h2">Id</div>
+  <div class="col-md-3 h2">Name</div>
+  <div class="col-md-3 h2">Price</div>
+</div>
+
+<div class="row" th:each="product: ${products}">
+  <div class="col-md-4  h3" th:text="${product.id}"/>
+  <div class="col-md-3 h3" th:text="${product.name}" />
+  <div class="col-md-3 h3" th:text="${product.price}" />
+<div class="col-md-3">
+ <form method="post"  th:action="@{/addtocart}">
+ <input type="hidden" name="id" id="id" th:value="${product.id}" />
+        <button type="submit" name="submit" >Add</button>
+    </form>
+</div>
+<div>
+
+</div>
+</div>
+
+ 
+	 </th:block>
+	 <br>
+	 <br>
+	 <div class="btn btn-primary">
+	 <a th:href="@{/cart}" style="color: red;"> Cart </a>
+	 </div>
+
+</body>
+</html>
