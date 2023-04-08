@@ -17,6 +17,43 @@
 		<java.version>17</java.version>
 	</properties>
 	<dependencies>
+
+		<dependency> 
+			<groupId>com.azure</groupId> 
+			<artifactId>azure-maps-search</artifactId> 
+			<version>1.0.0-beta.1</version> 
+		  </dependency> 
+		  <dependency> 
+			<groupId>com.azure</groupId> 
+			<artifactId>azure-maps-route</artifactId> 
+			<version>1.0.0-beta.1</version> 
+		  </dependency> 
+		  <dependency> 
+			<groupId>com.azure</groupId> 
+			<artifactId>azure-maps-render</artifactId> 
+			<version>1.0.0-beta.1</version> 
+		  </dependency> 
+		  <dependency> 
+			<groupId>com.azure</groupId> 
+			<artifactId>azure-maps-traffic</artifactId> 
+			<version>1.0.0-beta.1</version> 
+		  </dependency> 
+		  <dependency> 
+			<groupId>com.azure</groupId> 
+			<artifactId>azure-maps-weather</artifactId> 
+			<version>1.0.0-beta.1</version> 
+		  </dependency> 
+		  <dependency> 
+			<groupId>com.azure</groupId> 
+			<artifactId>azure-maps-timezone</artifactId> 
+			<version>1.0.0-beta.1</version> 
+		  </dependency> 
+		  <dependency> 
+			<groupId>com.azure</groupId> 
+			<artifactId>azure-maps-elevation</artifactId> 
+			<version>1.0.0-beta.1</version> 
+		  </dependency> 
+	
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-actuator</artifactId>
