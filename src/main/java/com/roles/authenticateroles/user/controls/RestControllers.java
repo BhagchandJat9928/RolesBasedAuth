@@ -1,5 +1,6 @@
 package com.roles.authenticateroles.user.controls;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -34,9 +35,11 @@ import com.azure.maps.search.models.SearchAddressOptions;
 import com.azure.maps.search.models.SearchAddressResult;
 import com.azure.maps.search.models.SearchAddressResultItem;
 import com.roles.authenticateroles.cart.Cart;
-import com.roles.authenticateroles.cart.Item;
+import com.roles.authenticateroles.cart.CartRepository;
 import com.roles.authenticateroles.cart.Product;
 import com.roles.authenticateroles.cart.ProductRepository;
+import com.roles.authenticateroles.subscription.Subscription;
+import com.roles.authenticateroles.subscription.SubscriptionRepository;
 import com.roles.authenticateroles.user.CustomUserDetails;
 import com.roles.authenticateroles.user.User;
 import com.roles.authenticateroles.user.UserRepository;
@@ -51,6 +54,10 @@ public class RestControllers {
 	@Autowired
 	UserRepository repository;
 	@Autowired
+	SubscriptionRepository subscriptionRepository;
+	@Autowired
+	CartRepository cartRepository;
+	@Autowired
 	ProductRepository productRepository;
 	RestTemplate rest = new RestTemplate();
 
@@ -58,6 +65,7 @@ public class RestControllers {
 	@PostMapping(value = "/signup")
 	public ResponseEntity<?> signup(@RequestBody User user, HttpServletRequest request) {
 		ResponseEntity<?> response;
+		System.out.println("helo");
 		if (repository.findByUsername(user.getUsername()).isEmpty()) {
 			BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 			user.setPassword(encoder.encode(user.getPassword()));
@@ -76,34 +84,74 @@ public class RestControllers {
 
 	}
 
-	@Transactional
-	@PostMapping(value = "product")
-	public Product addProduct(@RequestBody Product product) {
-		return productRepository.save(product);
-	}
-
 	@PostMapping(value = "/addtocart")
 	public void addToCart(Product product, Model model, HttpSession session) {
-		Item item = new Item(product, 1);
-		List<Item> list = new ArrayList<>();
+		SecurityContext context = SecurityContextHolder.getContext();
+		Authentication auth = context.getAuthentication();
+		Cart item = new Cart(product, 1);
+		List<Cart> list = new ArrayList<>();
+		session.setMaxInactiveInterval(60 * 5);
+		if (auth == null || !auth.isAuthenticated()) {
 		if (session.getAttribute("cart") == null) {
+				System.out.println("new Cart Session");
 			list.add(item);
-			Cart cart = new Cart(list);
-			session.setAttribute("cart", cart);
-			System.out.println("new Cart Session");
-		} else {
-			Cart cart = (Cart) session.getAttribute("cart");
-			System.out.println("cart: " + cart);
-			for (Item it : cart.getItems()) {
-				if (it.getProduct().getId().equals(item.getProduct().getId())) {
-					int index = cart.getItems().indexOf(it);
-					Item ite = new Item(it.getProduct(), it.getQuantity() + 1);
-					cart.getItems().set(index, ite);
-				}
-			}
-			session.setAttribute("cart", cart);
 
-		}
+				session.setAttribute("cart", list);
+		} else {
+				List<Cart> cart = (List<Cart>) session.getAttribute("cart");
+				list = cart;
+				boolean exist = false;
+				for (Cart it : list) {
+				if (it.getProduct().getId().equals(item.getProduct().getId())) {
+						int index = list.indexOf(it);
+						item = new Cart(it.getProduct(), it.getQuantity() + 1);
+						list.set(index, item);
+
+						exist = true;
+				}
+
+				}
+
+				if (!exist) {
+					list.add(item);
+
+				}
+
+				session.setAttribute("cart", list);
+
+			}
+		} else {
+			CustomUserDetails details = (CustomUserDetails) auth.getPrincipal();
+			System.out.println(details.toString());
+			User user = repository.findByUsername(details.getUsername()).get();
+			System.out.println(user.toString());
+
+			List<Cart> cart = user.getCart();
+			if (cart != null) {
+				list = cart;
+			}
+
+			boolean exist = false;
+			for (Cart it : list) {
+				if (it.getProduct().getId().equals(item.getProduct().getId())) {
+					int index = list.indexOf(it);
+					item = new Cart(it.getProduct(), it.getQuantity() + 1);
+					list.set(index, item);
+					cartRepository.updateById(item.getId(), item.getQuantity());
+					exist = true;
+				}
+
+			}
+
+			if (!exist) {
+				list.add(item);
+				cartRepository.save(item);
+			}
+
+			repository.updateUserCart(user.getUsername(), list);
+
+	}
+
 		model.addAttribute("addToCart", "Added Successfully to Cart");
 
 	}
@@ -189,5 +237,27 @@ public class RestControllers {
 		}
 
 	}
+
+	@GetMapping(value = "/subscription")
+	public List<Subscription> subscriptions() {
+		return subscriptionRepository.findAll();
+	}
+
+	@Transactional
+	@PostMapping(value = "/user/product", produces = "application/json")
+	public ResponseEntity<?> addProduct(@RequestBody Product product) {
+
+		product.setDate(LocalDateTime.now().toString());
+		productRepository.save(product);
+		return ResponseEntity.ok(product);
+	}
+
+	@Transactional
+	@PostMapping(value = "/subscription")
+	public ResponseEntity<?> addSubscriion(@RequestBody Subscription subscription) {
+		subscriptionRepository.save(subscription);
+		return ResponseEntity.ok(subscription);
+	}
+
 
 }

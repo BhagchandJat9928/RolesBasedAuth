@@ -1,24 +1,42 @@
 package com.roles.authenticateroles.cart;
 
-import java.util.List;
+import java.util.UUID;
 
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.DocumentReference;
+
+import com.roles.authenticateroles.user.User;
 
 
 @Document(collection="cart")
 public class Cart {
 	
 	@Id
-	private String id;
+	private String id = UUID.randomUUID().toString();
 	
-	private List<Item> items;
-	
-	public Cart() {}
+	@DocumentReference(lazy = true)
+	private User user;
 
-	public Cart(List<Item> items) {
-		super();
-		this.items = items;
+	@DocumentReference
+	private Product product;
+	
+	private int quantity;
+
+	public Cart() {
+	}
+
+	public Cart(Product product, int quantity) {
+		this.product = product;
+		this.quantity = quantity;
+	}
+
+	public User getUser() {
+		return user;
+	}
+
+	public void setUser(User user) {
+		this.user = user;
 	}
 
 	public String getId() {
@@ -29,17 +47,25 @@ public class Cart {
 		this.id = id;
 	}
 
-	public List<Item> getItems() {
-		return items;
+	public Product getProduct() {
+		return product;
 	}
 
-	public void setItems(List<Item> items) {
-		this.items = items;
+	public void setProduct(Product product) {
+		this.product = product;
+	}
+
+	public int getQuantity() {
+		return quantity;
+	}
+
+	public void setQuantity(int quantity) {
+		this.quantity = quantity;
 	}
 
 	@Override
 	public String toString() {
-		return "Cart [id=" + id + ", items=" + items + "]";
+		return "Cart [product=" + product + ", quantity=" + quantity + "]";
 	}
 	
 	
