@@ -3,14 +3,14 @@
    xmlns:sec="http://www.thymeleaf.org/thymeleaf-extras-springsecurity4" >
    <a href="">Home</a>
    |
-   <a th:href="@{/products}">
+   <a th:href="@{/user/products}">
    Product List
    </a>
    |
-   <a th:href="@{/cart}">
+   <a th:href="@{/user/cart}">
    My Cart
    </a>
-   |
+   
  
    </th:block>
    <th:block sec:authorize="hasRole('ROLE_USER')">

@@ -3,10 +3,10 @@ package com.roles.authenticateroles.user.controls;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.mongodb.core.schema.JsonSchemaObject.Type.JsonType;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -15,25 +15,16 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.client.RestTemplate;
 
-import com.azure.core.credential.AzureKeyCredential;
-import com.azure.core.models.GeoPosition;
-import com.azure.maps.search.MapsSearchClient;
-import com.azure.maps.search.MapsSearchClientBuilder;
-import com.azure.maps.search.models.MapsSearchAddress;
-import com.azure.maps.search.models.ReverseSearchAddressOptions;
-import com.azure.maps.search.models.ReverseSearchAddressResult;
-import com.azure.maps.search.models.ReverseSearchAddressResultItem;
-import com.azure.maps.search.models.SearchAddressOptions;
-import com.azure.maps.search.models.SearchAddressResult;
-import com.azure.maps.search.models.SearchAddressResultItem;
 import com.roles.authenticateroles.cart.Cart;
 import com.roles.authenticateroles.cart.CartRepository;
 import com.roles.authenticateroles.cart.Product;
@@ -43,6 +34,7 @@ import com.roles.authenticateroles.subscription.SubscriptionRepository;
 import com.roles.authenticateroles.user.CustomUserDetails;
 import com.roles.authenticateroles.user.User;
 import com.roles.authenticateroles.user.UserRepository;
+import com.roles.authenticateroles.user.UserService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -59,7 +51,12 @@ public class RestControllers {
 	CartRepository cartRepository;
 	@Autowired
 	ProductRepository productRepository;
+
 	RestTemplate rest = new RestTemplate();
+
+
+	@Autowired
+	UserService service;
 
 	@Transactional
 	@PostMapping(value = "/signup")
@@ -84,71 +81,67 @@ public class RestControllers {
 
 	}
 
-	@PostMapping(value = "/addtocart")
-	public void addToCart(Product product, Model model, HttpSession session) {
+	@SuppressWarnings("unchecked")
+	@PutMapping(value = "/addtocart")
+	public void addToCart(@RequestBody Product product, Model model, HttpSession session) {
 		SecurityContext context = SecurityContextHolder.getContext();
 		Authentication auth = context.getAuthentication();
 		Cart item = new Cart(product, 1);
 		List<Cart> list = new ArrayList<>();
-		session.setMaxInactiveInterval(60 * 5);
+		// session.setMaxInactiveInterval(60 * 5);
 		if (auth == null || !auth.isAuthenticated()) {
 		if (session.getAttribute("cart") == null) {
 				System.out.println("new Cart Session");
 			list.add(item);
-
 				session.setAttribute("cart", list);
 		} else {
-				List<Cart> cart = (List<Cart>) session.getAttribute("cart");
-				list = cart;
+			list = (List<Cart>) session.getAttribute("cart");
 				boolean exist = false;
-				for (Cart it : list) {
+				if (list.size() > 0) {
+					int index=0;
+			while(index<list.size()) {
+				Cart it = list.get(index);
 				if (it.getProduct().getId().equals(item.getProduct().getId())) {
-						int index = list.indexOf(it);
 						item = new Cart(it.getProduct(), it.getQuantity() + 1);
 						list.set(index, item);
-
 						exist = true;
+						break;
 				}
-
+				index++;
 				}
+			}
 
 				if (!exist) {
 					list.add(item);
-
 				}
-
 				session.setAttribute("cart", list);
 
 			}
 		} else {
-			CustomUserDetails details = (CustomUserDetails) auth.getPrincipal();
-			System.out.println(details.toString());
-			User user = repository.findByUsername(details.getUsername()).get();
-			System.out.println(user.toString());
 
+			User user = repository.findByUsername(auth.getName()).get();
 			List<Cart> cart = user.getCart();
+			boolean exist = false;
 			if (cart != null) {
 				list = cart;
-			}
+				for (Cart it : list) {
+					if (it.getProduct().getId().equals(item.getProduct().getId())) {
+						int index = list.indexOf(it);
+						item = new Cart(it.getProduct(), it.getQuantity() + 1);
+						list.set(index, item);
+						cartRepository.updateById(item.getId(), item.getQuantity());
+						exist = true;
+					}
 
-			boolean exist = false;
-			for (Cart it : list) {
-				if (it.getProduct().getId().equals(item.getProduct().getId())) {
-					int index = list.indexOf(it);
-					item = new Cart(it.getProduct(), it.getQuantity() + 1);
-					list.set(index, item);
-					cartRepository.updateById(item.getId(), item.getQuantity());
-					exist = true;
 				}
 
 			}
 
 			if (!exist) {
-				list.add(item);
-				cartRepository.save(item);
+				Cart afterUpdate = cartRepository.save(item);
+				service.addProductToCartByUsername(auth.getName(), afterUpdate);
 			}
 
-			repository.updateUserCart(user.getUsername(), list);
 
 	}
 
@@ -171,72 +164,8 @@ public class RestControllers {
 		return userDetails;
 	}
 
-	@GetMapping(value = "/maps/{search}")
-	public List<GeoPosition> getMaps(@PathVariable("search") String search) {
-		MapsSearchClientBuilder builder = new MapsSearchClientBuilder();
-		AzureKeyCredential keyCredential = new AzureKeyCredential("1F0MfCFmUz9OcYnwfyC5A1cXVX1Thk-540niXCHDnvg");
-		builder.credential(keyCredential);
-		MapsSearchClient client = builder.buildClient();
-		SearchAddressResult result = client.searchAddress(new SearchAddressOptions(search));
-		List<GeoPosition> list = new ArrayList<>();
-		if (result.getResults().size() > 0) {
-			for (SearchAddressResultItem item : result.getResults()) {
-				list.add(item.getPosition());
-				System.out.format("The coordinates is (%.4f, %.4f)", item.getPosition().getLatitude(),
-						item.getPosition().getLongitude());
-			}
-		}
-		return list;
-	}
 
-	@GetMapping(value = "/maps")
-	public List<MapsSearchAddress> getMaps(@RequestBody GeoPosition position) {
-		MapsSearchClientBuilder builder = new MapsSearchClientBuilder();
-		AzureKeyCredential keyCredential = new AzureKeyCredential("1F0MfCFmUz9OcYnwfyC5A1cXVX1Thk-540niXCHDnvg");
-		builder.credential(keyCredential);
-		MapsSearchClient client = builder.buildClient();
-		ReverseSearchAddressResult result = client.reverseSearchAddress(new ReverseSearchAddressOptions(position));
-		List<MapsSearchAddress> list = new ArrayList<>();
-		if (result.getAddresses().size() > 0) {
-			for (ReverseSearchAddressResultItem item : result.getAddresses()) {
 
-				list.add(item.getAddress());
-				System.out.println("address: " + item);
-			}
-		}
-		return list;
-	}
-
-	@GetMapping(value = "/distance/{query}")
-	public String distance(@PathVariable("query") String query) {
-
-		String url = "https://atlas.microsoft.com/route/directions/json?api-version=1.0&query=" + query
-				+ "&report=effectiveSettings&subscription-key=1F0MfCFmUz9OcYnwfyC5A1cXVX1Thk-540niXCHDnvg";
-		ResponseEntity<JsonType> result = rest.getForEntity(url, JsonType.class);
-
-		JsonType body = result.getBody();
-		if (body != null) {
-			return body.value();
-		} else {
-			return "No Response";
-		}
-	}
-
-	@GetMapping(value = "/circledistance/{query}")
-	public String circleDistance(@PathVariable("query") String query) {
-
-		String url = "https://us.atlas.microsoft.com/spatial/greatCircleDistance/json?api-version=2022-08-01&query=query="
-				+ query + "&subscription-key=1F0MfCFmUz9OcYnwfyC5A1cXVX1Thk-540niXCHDnvg";
-		ResponseEntity<JsonType> result = rest.getForEntity(url, JsonType.class);
-
-		JsonType body = result.getBody();
-		if (body != null) {
-			return body.value();
-		} else {
-			return "No Response";
-		}
-
-	}
 
 	@GetMapping(value = "/subscription")
 	public List<Subscription> subscriptions() {
@@ -244,7 +173,7 @@ public class RestControllers {
 	}
 
 	@Transactional
-	@PostMapping(value = "/user/product", produces = "application/json")
+	@PostMapping(value = "/product", produces = "application/json")
 	public ResponseEntity<?> addProduct(@RequestBody Product product) {
 
 		product.setDate(LocalDateTime.now().toString());
@@ -258,6 +187,55 @@ public class RestControllers {
 		subscriptionRepository.save(subscription);
 		return ResponseEntity.ok(subscription);
 	}
+	
+	@PutMapping(value = "/update/{username}/{name}")
+	public User updateName(@PathVariable("username") String username, @PathVariable("name") String name) {
+
+		return service.updateNameByUsername(username, name);
+	}
+
+	@DeleteMapping(value = "/delete/{username}")
+	public void deleteUser(@PathVariable("username") String username) {
+		repository.deleteByUsername(username);
+	}
+
+	@DeleteMapping(value = "/deleteById/{id}")
+	public void deleteUserById(@PathVariable("id") String id) {
+		repository.deleteById(id);
+	}
+
+	@GetMapping(value = "/findCart/{username}")
+	public List<Cart> cart(@PathVariable("username") String username) {
+		List<Cart> list=new ArrayList<>();
+
+
+		Optional<User> user = repository.findByUsername(username);
+		if (!user.isEmpty() && user.get().getCart().size() > 0) {
+			list = service.findCartByItemsername(user.get().getId());
+		/*
+		 * Optional<Cart> cart=
+		 * cartRepository.findById(user.get(0).getCart().get(0).getId()); if
+		 * (!cart.isEmpty()) { list.add(cart.get()); }
+		 */
+
+	}
+		return list;
+	}
+
+	@GetMapping(value = "/find")
+	public Optional<User> getUser() {
+		return repository.findByUsername("bhag");
+	}
+
+	@PutMapping(value = "/find")
+	public int getName() {
+		return repository.updateNameByUsername("bhag", "Ravan ");
+	}
+
+
+
+
+
 
 
 }

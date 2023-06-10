@@ -11,12 +11,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+
 import com.roles.authenticateroles.handlers.CutomAuthEntryPoint;
 import com.roles.authenticateroles.handlers.LoginFailureHandler;
 import com.roles.authenticateroles.handlers.LoginSuccessHandler;
 import com.roles.authenticateroles.user.CustomUserDetailsService;
 import com.roles.authenticateroles.user.User;
-
 
 @Configuration
 @EnableAutoConfiguration
@@ -45,7 +45,7 @@ public class SecurityConfig {
 	@Bean 
 	public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 		http
-		//.csrf().disable()
+				.csrf().disable()
 		//.sessionManagement()
 		//.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
 		//.and()
@@ -61,6 +61,7 @@ public class SecurityConfig {
 		.formLogin()
 		.loginPage("/login")
 		.loginProcessingUrl("/login")
+				.defaultSuccessUrl("/user")
 		.successHandler(new LoginSuccessHandler())
 		.failureHandler(new LoginFailureHandler())
 		.permitAll()
@@ -72,6 +73,7 @@ public class SecurityConfig {
 		//.authenticationProvider(authenticationProvider())
 		.exceptionHandling().authenticationEntryPoint(new CutomAuthEntryPoint());
 		//.and()
+
 	//	http.addFilterAt(new UserPasswordFilter(), UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}

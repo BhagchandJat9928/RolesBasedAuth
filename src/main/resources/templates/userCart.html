@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en"  xmlns:th="http://www.thymleaf.org">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-/Y6pD6FV/Vv2HJnA6t+vslU6fwYXjCFtcEpHbNJ0lyAFsXTsjBbfaDjzALeQsN6M" crossorigin="anonymous">
+
+<title>Cart Page</title>
+</head>
+<body>
+
+<div class="text-center">
+<h1>Cart</h1>
+</div >
+
+<br>
+ <th:block th:if="${cartList == null }">
+         <h2 class="text-center">Cart is Empty</h2>
+         <a th:href="@{/products}">Show Products List</a>
+      </th:block>
+      <th:block th:if="${cartList.size >0}">
+       <div class="row">
+  
+  <div class="col-md-3  h2">Id</div>
+  <div class="col-md-2  h2">Name</div>
+  <div class="col-md-2  h2">Price</div>
+  <div class="col-md-2  h2">Quantity</div>
+  <div class="col-md-2  h2">Sub Total</div>
+</div>
+<c:set var="total" value="0"></c:set>
+<div class="row" th:each="cart : ${cartList }">
+
+<c:set var="total" value="${total + cart.product.price * cart.quantity }"></c:set>
+  <div class="col-md-3  h3" th:text="${cart.product.id}" />
+  <div class="col-md-2  h3" th:text="${cart.product.name}" />
+  <div class="col-md-2  h3" th:text="${cart.product.price}" />
+  <div class="col-md-2  h3" th:text="${cart.quantity}" />
+  <div class="col-md-2  h3" th:text="${cart.product.price * cart.quantity }" />
+  
+</div>
+</div>
+	
+	  </th:block>
+	<br>
+	<div class="h1 text-center">
+	<div th:text="${total}">
+	</div>
+
+</body>
+</html>
